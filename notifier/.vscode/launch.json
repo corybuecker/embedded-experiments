@@ -6,13 +6,12 @@
             "device": "nRF52840_xxAA",
             "executable": "${workspaceFolder}/build/zephyr/zephyr.elf",
             "gdbPath": "${userHome}/.local/zephyr-sdk-0.16.8/arm-zephyr-eabi/bin/arm-zephyr-eabi-gdb",
-            "gdbTarget": "localhost:2331",
             "name": "Debug (Cortex-Debug, via West)",
-            "preLaunchTask": "West Build",
+            // "preLaunchTask": "West Debug",
             "request": "launch",
             "runToEntryPoint": "main",
             "servertype": "jlink",
-            "showDevDebugOutput": "raw",
+            "showDevDebugOutput": "vscode",
             "type": "cortex-debug",
         }
     ]

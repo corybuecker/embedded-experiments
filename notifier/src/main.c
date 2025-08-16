@@ -61,13 +61,13 @@ void my_thread_entry_point(void *p1, void *p2, void *p3)
   {
     k_sleep(K_MSEC(250));
 
-    const uint32_t reading = 3425;
-
     if (default_connection != NULL)
     {
       if (bt_gatt_is_subscribed(default_connection, &service_gatt_attributes[1],
                                 BT_GATT_CCC_NOTIFY))
       {
+        const uint8_t reading = sum_stored_readings();
+
         const int err =
             bt_gatt_notify(default_connection, &service_gatt_attributes[1],
                            &reading, sizeof(reading));
@@ -133,6 +133,13 @@ int main(void)
   if (err)
   {
     LOG_ERR("could not initialize GPIO readings (err %d)\n", err);
+    return err;
+  }
+
+  err = initialize_gpio_sampling();
+  if (err)
+  {
+    LOG_ERR("could not initialize GPIO sampling (err %d)\n", err);
     return err;
   }
 

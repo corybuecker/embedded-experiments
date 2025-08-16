@@ -76,23 +76,23 @@ async fn collect_samples(peripheral: Peripheral) -> Result<usize> {
         .await?
         .take(3)
         .map(|s| s.value)
-        .map(|samples| -> Result<[u8; 4], anyhow::Error> {
-            if samples.len() != 4 {
+        .map(|samples| -> Result<[u8; 1], anyhow::Error> {
+            if samples.len() != 1 {
                 return Err(anyhow!("Insufficient data"));
             }
-            let sample: [u8; 4] = samples[..4].try_into()?;
+            let sample: [u8; 1] = samples[..1].try_into()?;
             Ok(sample)
         })
-        .collect::<Vec<Result<[u8; 4], _>>>()
+        .collect::<Vec<Result<[u8; 1], _>>>()
         .await
         .into_iter()
-        .collect::<Result<Vec<[u8; 4]>, _>>()?;
+        .collect::<Result<Vec<[u8; 1]>, _>>()?;
 
     debug!("Notifications: {:?}", notifications);
 
-    let notifications: Vec<u32> = notifications
+    let notifications: Vec<u8> = notifications
         .iter()
-        .map(|s| u32::from_le_bytes(*s))
+        .map(|s| u8::from_le_bytes(*s))
         .collect();
 
     debug!("Notifications: {:?}", notifications);

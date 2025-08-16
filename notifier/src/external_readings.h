@@ -13,5 +13,6 @@ typedef struct external_reading
 } external_reading_t;
 
 int initialize_gpio_readings();
+int initialize_gpio_sampling();
 
 #endif // NOTIFIER_GPIO_READINGS_H

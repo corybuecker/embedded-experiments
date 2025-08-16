@@ -4,6 +4,7 @@
         {
             "label": "West Build",
             "type": "shell",
+            "dependsOn": "Stop Debug",
             "command": "west",
             "args": [
                 "flash",
@@ -26,19 +27,7 @@
                 "--runner",
                 "jlink"
             ],
-            "problemMatcher": [
-                {
-                    "owner": "jlink",
-                    "pattern": {
-                        "regexp": ".*"
-                    },
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": "GDB Server start",
-                        "endsPattern": ".*little\n"
-                    }
-                }
-            ],
+            "problemMatcher": [],
             "isBackground": true,
             "runOptions": {
                 "instanceLimit": 1,

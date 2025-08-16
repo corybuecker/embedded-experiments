@@ -15,5 +15,6 @@
 void initialize_storage();
 
 void store_reading(uint8_t value);
+uint8_t sum_stored_readings();
 
 #endif // NOTIFIER_STORAGE_H
