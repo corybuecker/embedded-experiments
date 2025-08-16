@@ -57,8 +57,36 @@ void store_reading(const uint8_t value)
         k_heap_alloc(&storage, sizeof(external_reading_t), K_FOREVER);
     new_reading->value = value;
 
+    // printk("Storing reading: %d\n", value);
+
     tail->next = new_reading;
     tail = new_reading;
 
     k_mutex_unlock(&mutex);
+}
+
+u_int8_t sum_stored_readings()
+{
+    if (!is_initialized)
+    {
+        printf("Storage not initialized, aborting summation\n");
+        return 0;
+    }
+
+    if (k_mutex_lock(&mutex, K_MSEC(100)) != 0)
+    {
+        printf("Failed to lock mutex, aborting summation\n");
+        return 0;
+    }
+
+    u_int8_t sum = 0;
+    external_reading_t *current = head;
+    while (current != tail)
+    {
+        sum += current->value;
+        current = current->next;
+    }
+
+    k_mutex_unlock(&mutex);
+    return sum;
 }
