@@ -1,0 +1,17 @@
+#ifndef NOTIFIER_GPIO_READINGS_H
+#define NOTIFIER_GPIO_READINGS_H
+
+#include "zephyr/drivers/gpio.h"
+#include "storage.h"
+
+extern const struct gpio_dt_spec button;
+
+typedef struct external_reading
+{
+    uint8_t value;
+    struct external_reading *next;
+} external_reading_t;
+
+int initialize_gpio_readings();
+
+#endif // NOTIFIER_GPIO_READINGS_H

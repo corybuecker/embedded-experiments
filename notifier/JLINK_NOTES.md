@@ -1,0 +1,1 @@
+1. `west rtt` will only work if already running a debug server sessions.
