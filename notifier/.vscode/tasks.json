@@ -1,0 +1,59 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "West Build",
+            "type": "shell",
+            "command": "west",
+            "args": [
+                "flash",
+                "--runner",
+                "jlink"
+            ],
+            "problemMatcher": [],
+            "runOptions": {
+                "instanceLimit": 1,
+                "instancePolicy": "terminateOldest"
+            }
+        },
+        {
+            "label": "West Debug",
+            "type": "shell",
+            "dependsOn": "West Build",
+            "command": "west",
+            "args": [
+                "debugserver",
+                "--runner",
+                "jlink"
+            ],
+            "problemMatcher": [
+                {
+                    "owner": "jlink",
+                    "pattern": {
+                        "regexp": ".*"
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "GDB Server start",
+                        "endsPattern": ".*little\n"
+                    }
+                }
+            ],
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1,
+                "instancePolicy": "terminateOldest"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "close": true
+            }
+        },
+        {
+            "label": "Stop Debug",
+            "type": "process",
+            "command": "${command:workbench.action.tasks.terminate}",
+            "problemMatcher": []
+        }
+    ]
+}
