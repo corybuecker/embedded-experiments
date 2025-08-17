@@ -116,6 +116,12 @@ int main(void) {
     return err;
   }
 
+  err = initialize_gpio_sampling();
+  if (err) {
+    printk("could not initialize GPIO sampling (err %d)\n", err);
+    return err;
+  }
+
   k_thread_create(&my_thread_data, my_stack_area,
                   K_THREAD_STACK_SIZEOF(my_stack_area), my_thread_entry_point,
                   NULL, NULL, NULL, 8, 0, K_NO_WAIT);

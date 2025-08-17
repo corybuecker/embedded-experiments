@@ -5,7 +5,7 @@
             "label": "West Build",
             "type": "shell",
             "options": {
-                "cwd": "${userHome}/zephyrproject",
+                "cwd": "${workspaceFolder}",
             },
             "command": "west",
             "args": [
