@@ -9,7 +9,7 @@ use tokio::{
     time::{sleep, timeout},
 };
 use tokio_stream::StreamExt;
-use tracing::debug;
+use tracing::{debug, error};
 use uuid::Uuid;
 
 static SERVICE_UUID: &str = "0000183b-0000-1000-8000-00805f9b34fb";
@@ -78,6 +78,7 @@ async fn collect_samples(peripheral: Peripheral) -> Result<usize> {
         .map(|s| s.value)
         .map(|samples| -> Result<[u8; 1], anyhow::Error> {
             if samples.len() != 1 {
+                error!("Insufficient data: expected 1 byte, got {:?}", samples);
                 return Err(anyhow!("Insufficient data"));
             }
             let sample: [u8; 1] = samples[..1].try_into()?;

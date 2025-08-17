@@ -1,13 +1,13 @@
-use crate::scanner::connect;
 use anyhow::anyhow;
 use btleplug::{
     api::Manager,
     platform::{self},
 };
-use scanner::wait_for_notify;
 use std::error::Error;
 use tracing::{debug, info};
 use tracing_subscriber::layer::SubscriberExt;
+
+use crate::scanner::{connect, wait_for_notify};
 
 mod scanner;
 
