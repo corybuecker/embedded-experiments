@@ -5,8 +5,8 @@
 #ifndef NOTIFIER_STORAGE_H
 #define NOTIFIER_STORAGE_H
 
-#include "zephyr/kernel.h"
 #include "external_readings.h"
+#include "zephyr/kernel.h"
 
 #define MAXIMUM_STORED_READINGS 25
 #define READING_SIZE_IN_BYTES sizeof(external_reading_t)

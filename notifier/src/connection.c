@@ -3,20 +3,16 @@
 K_EVENT_DEFINE(bluetooth_event);
 struct bt_conn *default_connection;
 
-void connected_callback(struct bt_conn *connection, uint8_t err)
-{
-  if (err)
-  {
+void connected_callback(struct bt_conn *connection, uint8_t err) {
+  if (err) {
     return;
   }
 
-  if (default_connection == NULL)
-  {
+  if (default_connection == NULL) {
     default_connection = bt_conn_ref(connection);
   }
 
-  if (default_connection != connection)
-  {
+  if (default_connection != connection) {
     return;
   }
 
@@ -25,19 +21,18 @@ void connected_callback(struct bt_conn *connection, uint8_t err)
   k_event_set(&bluetooth_event, CONNECTED);
 }
 
-void disconnected_callback(struct bt_conn *connection, uint8_t reason)
-{
+void disconnected_callback(struct bt_conn *connection, uint8_t reason) {
   bt_conn_unref(default_connection);
   default_connection = NULL;
 
-  switch (reason)
-  {
+  switch (reason) {
   case BT_HCI_ERR_AUTH_FAIL:
     printk("disconnected: authentication failed (0x%02x)\n", reason);
     break;
 
   case BT_HCI_ERR_REMOTE_USER_TERM_CONN:
-    printk("disconnected: remote user terminated connection (0x%02x)\n", reason);
+    printk("disconnected: remote user terminated connection (0x%02x)\n",
+           reason);
     break;
 
   case BT_HCI_ERR_REMOTE_LOW_RESOURCES:
@@ -57,7 +52,8 @@ void disconnected_callback(struct bt_conn *connection, uint8_t reason)
     break;
 
   case BT_HCI_ERR_UNACCEPT_CONN_PARAM:
-    printk("disconnected: unacceptable connection parameters (0x%02x)\n", reason);
+    printk("disconnected: unacceptable connection parameters (0x%02x)\n",
+           reason);
     break;
 
   case BT_HCI_ERR_UNSUPP_REMOTE_FEATURE:

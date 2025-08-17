@@ -9,8 +9,7 @@
 #include "zephyr/sys/util_macro.h"
 
 // TODO: document how the bitmask works with the event system.
-enum ConnectionState
-{
+enum ConnectionState {
   DISCONNECTED = BIT(0),
   CONNECTED = BIT(1),
   ADVERTISING = BIT(2),
