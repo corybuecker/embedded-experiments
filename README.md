@@ -26,21 +26,31 @@ Service UUIDs (Bluetooth base UUID):
 
 ## Zephyr setup (one‑time)
 
-1) Install toolchain and West
-
-- Follow the official guide (recommended): https://docs.zephyrproject.org/latest/develop/getting_started/index.html
-
-2) When installed the SDK, only install `arm-zephyr-eabi`
+1) Install toolchain and West, reference the official guide (recommended): https://docs.zephyrproject.org/latest/develop/getting_started/index.html
 
 ```sh
+cd embedded-workspace
+python -m venv .venv
+source .venv/bin/activate
+
+pip install west
+
+west init
+west update
+
+west zephyr-export
+west packages pip --install
+
+cd zephyr
+
 west sdk install -t arm-zephyr-eabi
 ```
 
 ## Build and flash the notifier (Zephyr)
 
-This repo (`ble-experiments`) is an out‑of‑tree app. You will build it from the Zephyr workspace with `-s` (source dir).
+This repo (`ble-experiments`) contains a workspace app. You will build each embedded app from its own project directory.
 
-From your project workspace (e.g., `~/zephyrproject`):
+From your project directory (e.g., `embedded-workspace`):
 
 ```sh
 # Example for Nordic nRF52840 DK; change -b to your board (e.g., nrf52dk_nrf52832)
