@@ -1,8 +1,6 @@
 use anyhow::anyhow;
-use btleplug::{
-    api::Manager,
-    platform::{self},
-};
+use btleplug::api::Manager as _;
+use btleplug::platform::Manager;
 use std::error::Error;
 use tracing::{debug, info};
 use tracing_subscriber::layer::SubscriberExt;
@@ -17,7 +15,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let subscriber = tracing_subscriber::registry().with(stdout_log);
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    let manager = platform::Manager::new().await.unwrap();
+    let manager = Manager::new().await.unwrap();
     let adapters = manager.adapters().await?;
     let adapter = adapters
         .first()
