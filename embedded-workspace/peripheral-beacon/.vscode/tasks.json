@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "West Build",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "command": "west",
+            "args": [
+                "flash",
+                "--runner",
+                "pyocd"
+            ],
+            "problemMatcher": [
+                "$gcc",
+                "$armcc5"
+            ],
+            "runOptions": {
+                "instanceLimit": 1,
+                "instancePolicy": "terminateOldest",
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "clear": true,
+                "close": true
+            },
+            "isBackground": true,
+        }
+    ]
+}
