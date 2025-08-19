@@ -54,7 +54,7 @@ From your project directory (e.g., `embedded-workspace`):
 
 ```sh
 # Example for Nordic nRF52840 DK; change -b to your board (e.g., nrf52dk_nrf52832)
-west build -p always -b nrf52840dk/nrf52840 ~/projects/ble-experiments/notifier
+west build -p always -b nrf52840dk/nrf52840 
 west flash --runner jlink
 ```
 
