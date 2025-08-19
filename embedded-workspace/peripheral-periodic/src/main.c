@@ -21,7 +21,7 @@ static struct bt_data periodic_advertising_data[] = {
 };
 
 static struct bt_data advertising_data[] = {
-    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+    // BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
     BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME,
             sizeof(CONFIG_BT_DEVICE_NAME) - 1),
     // BT_DATA(BT_DATA_SVC_DATA16, periodic_advertising_service_data,

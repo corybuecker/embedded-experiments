@@ -23,6 +23,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     debug!("Central adapter: {:?}", adapter);
 
+    // adapter.start_scan(ScanFilter::default()).await?;
+
+    // let mut events = adapter.events().await?;
+
+    // while let Some(event) = events.next().await {
+    //     match event {
+    //         // CentralEvent::DeviceUpdated(id) => {
+    //         //     // let peripheral = adapter.peripheral(&id).await?;
+    //         //     // let properties = peripheral.properties().await?.unwrap();
+
+    //         //     // debug!("Device updated: {:#?}", properties);
+    //         // }
+    //         CentralEvent::ServiceDataAdvertisement { id, service_data } => {
+    //             debug!(
+    //                 "Received service data advertisement: id = {:?}, data = {:?}",
+    //                 id, service_data
+    //             );
+    //         }
+    //         // CentralEvent::ManufacturerDataAdvertisement {
+    //         //     id,
+    //         //     manufacturer_data,
+    //         // } => {
+    //         //     // debug!(
+    //         //     //     "Received manufacturer data advertisement: id = {:?}, data = {:?}",
+    //         //     //     id, manufacturer_data
+    //         //     // );
+    //         // }
+    //         _ => {
+    //             // debug!("Received event: {:?}", event);
+    //         }
+    //     }
+    // }
+
     let peripheral = connect(adapter).await?;
     info!("Connected to peripheral: {:?}", peripheral);
     wait_for_notify(&peripheral).await?;
