@@ -1,0 +1,13 @@
+{
+    "C_Cpp.default.compileCommands": [
+        "${workspaceFolder}/build/compile_commands.json"
+    ],
+    "C_Cpp.default.compilerPath": "${userHome}/zephyr-sdk-0.17.2/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc",
+    "cmake.configureOnOpen": false,
+    "files.associations": {
+        "external_readings.h": "c"
+    },
+    "editor.formatOnSave": true,
+    "C_Cpp.formatting": "clangFormat",
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+}
