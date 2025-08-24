@@ -1,0 +1,10 @@
+[package]
+name = "pico-2w"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+panic-probe = { version = "1.0.0", features = ["defmt"] }
+rp235x-hal = { version = "0.3.0", features = ["rt", "defmt", "critical-section-impl"] }
