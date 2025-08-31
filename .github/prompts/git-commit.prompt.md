@@ -6,7 +6,7 @@ Your job is to recreate all commits on the current Git branch. After a soft rese
 
 Always do these steps first.
 
-1. Ensure all changes are staged and then commit them with a work-in-progress message
+1. Ensure all changes are staged and then commit them with a work-in-progress message. There may be no unstaged changes, if not, then keep going.
 2. Pull the origin `main` branch
 3. Rebase the current branch onto the `main` branch
 4. Soft reset the current branch to the `main` branch
