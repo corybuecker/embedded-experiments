@@ -1,6 +1,6 @@
 # BLE Experiments
 
-Minimal BLE Peripheral (Zephyr/C) + Central (Rust) to explore notifications end‑to‑end.
+Minimal BLE Peripheral (Zephyr/C/Embassy), Central (Rust), and async Rust embedded experiments (nRF52840, Pico W) to explore notifications end‑to‑end.
 
 ## Overview
 
@@ -13,10 +13,55 @@ Service UUIDs (Bluetooth base UUID):
 
 ## Repo structure
 
-- notifier/: Zephyr application (C, CMake)
-- subscriber/: Rust workspace member (btleplug + tokio)
+- `notifier/`: Zephyr application (C, CMake)
+- `subscriber/`: Rust workspace member (btleplug + tokio)
+- `embassy-experiment/`: Rust async embedded BLE peripheral for nRF52840 using Embassy and nrf-softdevice
+- `pico-2w/`: Minimal Rust embedded project for Raspberry Pi Pico W (rp235x-hal)
 
-## Prerequisites
+---
+
+## Rust setup (one‑time)
+
+Install Rust and toolchain:
+
+```sh
+curl https://sh.rustup.rs -sSf | sh
+rustup default stable
+```
+
+Platform specifics for BLE (btleplug):
+- macOS: Works with CoreBluetooth. Grant Bluetooth permission to your terminal/IDE in System Settings > Privacy & Security > Bluetooth.
+- Linux: Install BlueZ; ensure your user can access BLE (may need `bluetooth` group and running `bluetoothd`).
+- Windows: Uses Windows BLE APIs; run from a terminal with Bluetooth enabled.
+
+---
+
+## Embassy Rust Embedded Projects
+
+### embassy-experiment (nRF52840, async BLE peripheral)
+- Uses [Embassy](https://embassy.dev/) async framework and [nrf-softdevice](https://github.com/embassy-rs/nrf-softdevice) for BLE
+- Implements a custom GATT server and notification logic in async Rust
+- Target: nRF52840 (see `Cargo.toml` for dependencies)
+
+**Build & flash:**
+```sh
+cd embassy-experiment
+# Set up your toolchain for thumbv7em-none-eabi (see Embassy docs)
+cargo build --release
+# Use your preferred flashing tool (e.g., probe-rs, nrfjprog)
+probe-rs download target/thumbv7em-none-eabihf/release/embassy-experiment --chip nRF52840_xxAA
+```
+
+### pico-2w (Raspberry Pi Pico W)
+- Minimal Rust project using `rp235x-hal` and `defmt` logging
+- Example for getting started with embedded Rust on the Pico W
+
+**Build:**
+```sh
+cd pico-2w
+cargo build --release --target thumbv8m.main-none-eabihf
+# Flash with your preferred tool
+```
 
 - macOS, Linux, or Windows (tested logic is platform‑agnostic; RTT notes assume J‑Link targets on macOS/Linux)
 - A Zephyr‑supported BLE board (e.g., Nordic nRF52 or nRF52840 DK). Board must provide DT alias `sw0` for the user button.
@@ -68,22 +113,6 @@ west rtt
 Notes
 - The app enables RTT and disables UART console (`prj.conf`). If your board lacks J‑Link/RTT, switch console to UART in `prj.conf`.
 - The app uses DT alias `sw0` as the button input; ensure your board defines it (most Zephyr reference boards do).
-
----
-
-## Rust setup (one‑time)
-
-Install Rust and toolchain:
-
-```sh
-curl https://sh.rustup.rs -sSf | sh
-rustup default stable
-```
-
-Platform specifics for BLE (btleplug):
-- macOS: Works with CoreBluetooth. Grant Bluetooth permission to your terminal/IDE in System Settings > Privacy & Security > Bluetooth.
-- Linux: Install BlueZ; ensure your user can access BLE (may need `bluetooth` group and running `bluetoothd`).
-- Windows: Uses Windows BLE APIs; run from a terminal with Bluetooth enabled.
 
 ## Run the Rust subscriber
 
@@ -142,4 +171,4 @@ MIT (unless noted otherwise in subdirectories).
 
 ## Notes
 
-This README was written by AI.
+This README was written and updated with the help of AI.
