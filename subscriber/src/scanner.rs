@@ -41,11 +41,14 @@ async fn connect_to_peripheral(adapter: Adapter) -> Result<Peripheral> {
             peripheral.discover_services().await?;
 
             let services = peripheral.services();
+
             let service_uuid = Uuid::from_str(SERVICE_UUID)?;
             let service = services
                 .into_iter()
                 .find(|s| s.uuid == service_uuid)
                 .ok_or(anyhow!("could not find the service"))?;
+
+            debug!("Discovered service: {:?}", service);
 
             let characteristics = service.characteristics;
             let characteristic = characteristics

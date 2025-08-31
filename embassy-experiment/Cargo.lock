@@ -298,7 +298,9 @@ dependencies = [
  "defmt-rtt",
  "embassy-executor",
  "embassy-nrf",
+ "embassy-sync 0.7.2",
  "embassy-time 0.5.0",
+ "futures",
  "nrf-softdevice",
  "panic-probe",
 ]
