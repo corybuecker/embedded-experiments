@@ -2,11 +2,11 @@
 #![no_main]
 
 use core::future;
-
 use defmt::{info, *};
 use defmt_rtt as _;
 use embassy_executor::Spawner;
-use embassy_nrf::{self as _, config};
+use embassy_nrf::{self as _, config, gpio::Input, gpiote::InputChannel, interrupt::Priority};
+use embassy_time::Timer;
 use nrf_softdevice::{
     self as _, Softdevice,
     ble::{
@@ -18,7 +18,18 @@ use nrf_softdevice::{
         peripheral,
     },
 };
-use panic_probe as _; // global logger + panicking behavior
+use panic_probe as _;
+
+#[embassy_executor::task]
+async fn button_task(mut button: InputChannel<'static>) {
+    loop {
+        button.wait().await;
+        defmt::info!("Button pressed!");
+
+        // Debounce delay
+        Timer::after_millis(50).await;
+    }
+}
 
 #[embassy_executor::task]
 async fn softdevice_task(sd: &'static Softdevice) -> ! {
@@ -29,10 +40,18 @@ static SCAN_DATA: [u8; 0] = [];
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
-    let _peripherals = embassy_nrf::init(config::Config::default());
+    let mut config = config::Config::default();
+    config.gpiote_interrupt_priority = Priority::P2;
+    config.time_interrupt_priority = Priority::P2;
+    let peripherals = embassy_nrf::init(config);
+    let button = Input::new(peripherals.P1_06, embassy_nrf::gpio::Pull::Up);
+    let button_channel = InputChannel::new(
+        peripherals.GPIOTE_CH0,
+        button,
+        embassy_nrf::gpiote::InputChannelPolarity::HiToLo,
+    );
 
     let service_id = ServiceUuid16::from_u16(0x183B);
-
     let sd = Softdevice::enable(&nrf_softdevice::Config::default());
     let mut service = unwrap!(ServiceBuilder::new(sd, Uuid::new_16(0x183B)));
     let characteristic = unwrap!(
@@ -46,6 +65,7 @@ async fn main(spawner: Spawner) -> ! {
     characteristic.build();
 
     unwrap!(spawner.spawn(softdevice_task(sd)));
+    unwrap!(spawner.spawn(button_task(button_channel)));
 
     let adv_data: AdvertisementPayload<_> = ExtendedAdvertisementBuilder::new()
         .flags(&[Flag::GeneralDiscovery, Flag::LE_Only])
@@ -62,7 +82,7 @@ async fn main(spawner: Spawner) -> ! {
 
     #[allow(clippy::empty_loop)]
     loop {
-        let conn = unwrap!(peripheral::advertise_connectable(sd, advertising, &config).await);
+        let _conn = unwrap!(peripheral::advertise_connectable(sd, advertising, &config).await);
         info!("advertising done");
         future::pending::<()>().await
     }
