@@ -24,6 +24,21 @@ jobs:
           sudo apt-get install -y libdbus-1-dev pkg-config
       - run: cargo clippy -- -D warnings
 
+  lint-embassy-experiment:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embassy-experiment
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42
+        with:
+          components: clippy
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev pkg-config
+      - run: cargo clippy -- -D warnings
+
   test-rust-subscriber:
     runs-on: ubuntu-latest
     defaults:

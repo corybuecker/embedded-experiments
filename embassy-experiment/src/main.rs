@@ -50,7 +50,7 @@ async fn notify_task<'a>(
 }
 
 #[embassy_executor::task]
-async fn button_task(mut button: InputChannel<'static>) {
+async fn button_task(button: InputChannel<'static>) {
     loop {
         button.wait().await;
         defmt::info!("Button pressed!");
