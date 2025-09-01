@@ -12,13 +12,18 @@ Always do these steps first.
 4. Soft reset the current branch to the `main` branch
 5. Restore all the staged files to their unstaged state
 
-Read all the changed files, and for each set of related changes stage the files that belong to the current group of related changes:
+Next, follow these steps:
+
+1. Read all the changed files
+2. Group them into logical sets of changes
+3. Add each logical set of changes to the staging area
+4. Commit the logical set of changes with an appropriate commit message
+5. Repeat for each group of related changes
+
+Here are some general rules:
 
 - Do not use `git add .` or `git add -A` to stage all files at once
-- For each commit, only stage the files that belong to the current group of related changes
-- Stage only the files for the current set of changes
-- Create a new commit for this group of related changes
+- Create a new commit for each group of logically related changes
 - Always use conventional commit format for commit messages
 - Keep the subject line under 72 characters
 - Write a detailed body for the commit message, explaining the changes and their purpose
-- Repeat for each group of related changes

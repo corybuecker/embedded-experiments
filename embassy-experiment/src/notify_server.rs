@@ -6,6 +6,7 @@ use nrf_softdevice::ble::{
 
 pub struct NotifyServer {
     pub cccd_handle: u16,
+    #[allow(unused)]
     pub value_handle: u16,
 }
 

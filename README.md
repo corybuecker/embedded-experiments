@@ -1,11 +1,12 @@
 # BLE Experiments
 
-Minimal BLE Peripheral (Zephyr/C/Embassy), Central (Rust), and async Rust embedded experiments (nRF52840, Pico W) to explore notifications end‑to‑end.
+Various embedded experiments, including BLE Peripheral in Zephyr/C and Embassy/Rust, BLE Central (Rust), and async Rust.
 
 ## Overview
 
 - notifier (Zephyr, C): BLE Peripheral that advertises a 16‑bit service 0x183B with a single Notifiable characteristic (0x183C). It counts external events (button SW0 presses) and periodically notifies a 1‑byte value (sum of recent readings) every ~250 ms when a client subscribes.
-- subscriber (Rust): BLE Central that scans for the service, connects, subscribes to the first characteristic in the service, and collects three notifications (with a 10 s timeout) using btleplug.
+- notifier (Embassy, Rust): BLE Peripheral that advertises a 16‑bit service 0x183B with a single Notifiable characteristic (0x183C). It counts external events (button SW0 presses) and periodically notifies a 1‑byte value (sum of recent readings) every ~250 ms when a client subscribes.
+- subscriber (Rust): BLE Central that scans for the service, connects, subscribes to the first characteristic in the service, and collects three notifications (with a 10s timeout) using btleplug.
 
 Service UUIDs (Bluetooth base UUID):
 - Service: 0000183b-0000-1000-8000-00805f9b34fb
@@ -13,9 +14,9 @@ Service UUIDs (Bluetooth base UUID):
 
 ## Repo structure
 
-- `notifier/`: Zephyr application (C, CMake)
-- `subscriber/`: Rust workspace member (btleplug + tokio)
+- `embedded-workspace/*`: Zephyr applications (C, CMake)
 - `embassy-experiment/`: Rust async embedded BLE peripheral for nRF52840 using Embassy and nrf-softdevice
+- `subscriber/`: Rust workspace member (btleplug + tokio)
 - `pico-2w/`: Minimal Rust embedded project for Raspberry Pi Pico W (rp235x-hal)
 
 ---
@@ -26,6 +27,7 @@ Install Rust and toolchain:
 
 ```sh
 curl https://sh.rustup.rs -sSf | sh
+
 rustup default stable
 ```
 
@@ -62,10 +64,6 @@ cd pico-2w
 cargo build --release --target thumbv8m.main-none-eabihf
 # Flash with your preferred tool
 ```
-
-- macOS, Linux, or Windows (tested logic is platform‑agnostic; RTT notes assume J‑Link targets on macOS/Linux)
-- A Zephyr‑supported BLE board (e.g., Nordic nRF52 or nRF52840 DK). Board must provide DT alias `sw0` for the user button.
-- Optional: SEGGER J‑Link for flashing/debug/RTT (RTT console is enabled in `prj.conf`).
 
 ---
 
@@ -160,14 +158,14 @@ Expected behavior
 	- Ensure Bluetooth is enabled; on macOS grant Bluetooth permission to your terminal/IDE; on Linux ensure BlueZ is running.
 - No notifications
 	- Ensure the client has subscribed; verify the service/characteristic UUIDs match; press SW0 to generate readings.
-- No console output from the board
+- Zephyr - no console output from the board
 	- Use RTT (requires J‑Link) or switch to UART console by updating `prj.conf`.
 
 ---
 
 ## License
 
-MIT (unless noted otherwise in subdirectories).
+MIT
 
 ## Notes
 

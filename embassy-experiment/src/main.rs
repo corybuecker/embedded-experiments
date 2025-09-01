@@ -1,16 +1,17 @@
 #![no_std]
 #![no_main]
 
-pub mod notify_server;
+mod notify_server;
+mod storage;
 
-use crate::notify_server::NotifyServer;
-use core::cell::Cell;
+use crate::{notify_server::NotifyServer, storage::Measurements};
+use core::cell::{Cell, RefCell};
 use defmt::{error, info, *};
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_nrf::{self as _, config, gpio::Input, gpiote::InputChannel, interrupt::Priority};
-use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::blocking_mutex::{CriticalSectionMutex, Mutex};
 use embassy_time::Timer;
 use futures::{future::select, pin_mut};
 use nrf_softdevice::{
@@ -35,10 +36,13 @@ async fn notify_task<'a>(
     conn: &'a Connection,
     value_handle: u16,
     notify_enabled: &'a Mutex<NoopRawMutex, Cell<bool>>,
+    storage: &'static CriticalSectionMutex<RefCell<Measurements>>,
 ) -> ! {
     loop {
         if notify_enabled.lock(|flag| flag.get()) {
-            match notify_value(conn, value_handle, &[0x1]) {
+            let sum = storage.lock(|s: &RefCell<Measurements>| s.borrow().sum());
+
+            match notify_value(conn, value_handle, &[sum]) {
                 Ok(()) => {}
                 Err(e) => {
                     error!("Failed to notify value: {}", e);
@@ -50,12 +54,24 @@ async fn notify_task<'a>(
 }
 
 #[embassy_executor::task]
-async fn button_task(button: InputChannel<'static>) {
+async fn add_measurements(storage: &'static CriticalSectionMutex<RefCell<Measurements>>) {
+    loop {
+        storage.lock(|s: &RefCell<Measurements>| s.borrow_mut().add(0x0));
+
+        Timer::after_millis(250).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn button_task(
+    button: InputChannel<'static>,
+    storage: &'static CriticalSectionMutex<RefCell<Measurements>>,
+) {
     loop {
         button.wait().await;
         defmt::info!("Button pressed!");
 
-        // Debounce delay
+        storage.lock(|s: &RefCell<Measurements>| s.borrow_mut().add(0x1));
         Timer::after_millis(50).await;
     }
 }
@@ -66,13 +82,16 @@ async fn softdevice_task(sd: &'static Softdevice) -> ! {
 }
 
 static SCAN_DATA: [u8; 0] = [];
+static STORAGE: CriticalSectionMutex<RefCell<Measurements>> =
+    CriticalSectionMutex::new(RefCell::new(Measurements::new()));
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
     let mut config = config::Config::default();
-    config.gpiote_interrupt_priority = Priority::P2;
-    config.time_interrupt_priority = Priority::P2;
+    config.gpiote_interrupt_priority = Priority::P5;
+    config.time_interrupt_priority = Priority::P5;
     let peripherals = embassy_nrf::init(config);
+
     let button = Input::new(peripherals.P1_06, embassy_nrf::gpio::Pull::Up);
     let button_channel = InputChannel::new(
         peripherals.GPIOTE_CH0,
@@ -96,7 +115,8 @@ async fn main(spawner: Spawner) -> ! {
     let notify_enabled = Mutex::new(Cell::new(false));
 
     unwrap!(spawner.spawn(softdevice_task(sd)));
-    unwrap!(spawner.spawn(button_task(button_channel)));
+    unwrap!(spawner.spawn(button_task(button_channel, &STORAGE)));
+    unwrap!(spawner.spawn(add_measurements(&STORAGE)));
 
     let adv_data: AdvertisementPayload<_> = ExtendedAdvertisementBuilder::new()
         .flags(&[Flag::GeneralDiscovery, Flag::LE_Only])
@@ -128,10 +148,16 @@ async fn main(spawner: Spawner) -> ! {
                 }
             }
         });
-        let notify_task_future = notify_task(&conn, characteristic.value_handle, &notify_enabled);
+        let notify_task_future = notify_task(
+            &conn,
+            characteristic.value_handle,
+            &notify_enabled,
+            &STORAGE,
+        );
 
         pin_mut!(gatt_server_future);
         pin_mut!(notify_task_future);
+
         select(gatt_server_future, notify_task_future).await;
     }
 }
