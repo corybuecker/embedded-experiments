@@ -1,4 +1,4 @@
-# BLE Experiments
+# Embedded experiments
 
 Various embedded experiments, including BLE Peripheral in Zephyr/C and Embassy/Rust, BLE Central (Rust), and async Rust.
 
