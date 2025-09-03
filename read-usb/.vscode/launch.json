@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "preLaunchTask": "${defaultBuildTask}",
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "Debug",
+            "flashingConfig": {
+                "flashingEnabled": true
+            },
+            "chip": "RP235x",
+            "wireProtocol": "Swd",
+            "coreConfigs": [
+                {
+                    "programBinary": "${workspaceFolder}/target/thumbv8m.main-none-eabihf/debug/pico-2w"
+                }
+            ]
+        }
+    ]
+}
