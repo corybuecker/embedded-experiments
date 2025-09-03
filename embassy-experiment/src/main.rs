@@ -92,7 +92,7 @@ async fn main(spawner: Spawner) -> ! {
     config.time_interrupt_priority = Priority::P5;
     let peripherals = embassy_nrf::init(config);
 
-    let button = Input::new(peripherals.P1_06, embassy_nrf::gpio::Pull::Up);
+    let button = Input::new(peripherals.P0_11, embassy_nrf::gpio::Pull::Up);
     let button_channel = InputChannel::new(
         peripherals.GPIOTE_CH0,
         button,

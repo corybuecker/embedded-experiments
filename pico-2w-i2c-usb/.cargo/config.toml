@@ -7,5 +7,9 @@ runner = "probe-rs run --chip rp235x"
 [env]
 DEFMT_LOG = "trace"
 
+[profile.dev]
+opt-level = "s"
+debug = true
+
 [profile.release]
 debug = true

@@ -2,10 +2,15 @@
 target = "thumbv7em-none-eabihf"
 
 [target.thumbv7em-none-eabihf]
-runner = "probe-rs run --chip nRF52840_xxAA"
+runner = "probe-rs run --protocol swd --chip nRF52840_xxAA"
 
 [env]
-DEFMT_LOG = "debug"
+DEFMT_LOG = "trace"
+
+[profile.dev]
+debug = true
+opt-level = 1
 
 [profile.release]
-debug = true
+debug = false
+opt-level = 3
