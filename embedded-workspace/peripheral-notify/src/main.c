@@ -50,7 +50,7 @@ struct k_thread my_thread_data;
 
 void my_thread_entry_point(void *p1, void *p2, void *p3) {
   while (true) {
-    k_sleep(K_MSEC(250));
+    k_sleep(K_MSEC(1000));
 
     const uint8_t reading = sum_stored_readings();
 
