@@ -1,5 +1,3 @@
-//! Set up linker scripts for the rp235x-hal examples
-
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
