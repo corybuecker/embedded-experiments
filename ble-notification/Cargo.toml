@@ -1,5 +1,5 @@
 [package]
-name = "embassy-experiment"
+name = "ble-notification"
 version = "0.1.0"
 edition = "2024"
 

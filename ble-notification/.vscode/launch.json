@@ -13,7 +13,7 @@
             "wireProtocol": "Swd",
             "coreConfigs": [
                 {
-                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/embassy-experiment"
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/ble-notification"
                 }
             ]
         }

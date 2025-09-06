@@ -4,12 +4,14 @@
 mod notify_server;
 mod storage;
 
+use crate::storage::SharedMeasurements;
 use crate::{notify_server::NotifyServer, storage::Measurements};
-use core::cell::{Cell, RefCell};
+use core::cell::Cell;
 use defmt::{error, info, *};
 use defmt_rtt as _;
 use embassy_executor::Spawner;
-use embassy_nrf::{self as _, config, gpio::Input, gpiote::InputChannel, interrupt::Priority};
+use embassy_nrf::gpio::Input;
+use embassy_nrf::{self as _, config, interrupt::Priority};
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::{CriticalSectionMutex, Mutex};
 use embassy_time::Timer;
@@ -32,15 +34,17 @@ use nrf_softdevice::{
 };
 use panic_probe as _;
 
+static SCAN_DATA: [u8; 0] = [];
+static STORAGE: SharedMeasurements = CriticalSectionMutex::new(Measurements::new());
+
 async fn notify_task<'a>(
     conn: &'a Connection,
     value_handle: u16,
     notify_enabled: &'a Mutex<NoopRawMutex, Cell<bool>>,
-    storage: &'static CriticalSectionMutex<RefCell<Measurements>>,
 ) -> ! {
     loop {
         if notify_enabled.lock(|flag| flag.get()) {
-            let sum = storage.lock(|s: &RefCell<Measurements>| s.borrow().sum());
+            let sum = STORAGE.lock(|m| m.sum());
 
             match notify_value(conn, value_handle, &[sum]) {
                 Ok(()) => {}
@@ -54,25 +58,24 @@ async fn notify_task<'a>(
 }
 
 #[embassy_executor::task]
-async fn add_measurements(storage: &'static CriticalSectionMutex<RefCell<Measurements>>) {
+async fn sensor_task(mut sensor: Input<'static>) {
     loop {
-        storage.lock(|s: &RefCell<Measurements>| s.borrow_mut().add(0x0));
+        STORAGE.lock(|m| m.unlock());
+        sensor.wait_for_high().await;
+        STORAGE.lock(|m| m.lock());
 
-        Timer::after_millis(250).await;
+        while sensor.is_high() {
+            STORAGE.lock(|m| m.add(0x1));
+            Timer::after_millis(100).await;
+        }
     }
 }
 
 #[embassy_executor::task]
-async fn button_task(
-    button: InputChannel<'static>,
-    storage: &'static CriticalSectionMutex<RefCell<Measurements>>,
-) {
+async fn add_empty_measurements() {
     loop {
-        button.wait().await;
-        defmt::info!("Button pressed!");
-
-        storage.lock(|s: &RefCell<Measurements>| s.borrow_mut().add(0x1));
-        Timer::after_millis(50).await;
+        STORAGE.lock(|m| m.add_if_unlocked(0x0));
+        Timer::after_millis(100).await;
     }
 }
 
@@ -81,10 +84,6 @@ async fn softdevice_task(sd: &'static Softdevice) -> ! {
     sd.run().await
 }
 
-static SCAN_DATA: [u8; 0] = [];
-static STORAGE: CriticalSectionMutex<RefCell<Measurements>> =
-    CriticalSectionMutex::new(RefCell::new(Measurements::new()));
-
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
     let mut config = config::Config::default();
@@ -92,12 +91,7 @@ async fn main(spawner: Spawner) -> ! {
     config.time_interrupt_priority = Priority::P5;
     let peripherals = embassy_nrf::init(config);
 
-    let button = Input::new(peripherals.P0_11, embassy_nrf::gpio::Pull::Up);
-    let button_channel = InputChannel::new(
-        peripherals.GPIOTE_CH0,
-        button,
-        embassy_nrf::gpiote::InputChannelPolarity::HiToLo,
-    );
+    let sensor = Input::new(peripherals.P1_08, embassy_nrf::gpio::Pull::Down);
 
     let service_id = ServiceUuid16::from_u16(0x183B);
     let sd = Softdevice::enable(&nrf_softdevice::Config::default());
@@ -115,8 +109,8 @@ async fn main(spawner: Spawner) -> ! {
     let notify_enabled = Mutex::new(Cell::new(false));
 
     unwrap!(spawner.spawn(softdevice_task(sd)));
-    unwrap!(spawner.spawn(button_task(button_channel, &STORAGE)));
-    unwrap!(spawner.spawn(add_measurements(&STORAGE)));
+    unwrap!(spawner.spawn(sensor_task(sensor)));
+    unwrap!(spawner.spawn(add_empty_measurements()));
 
     let adv_data: AdvertisementPayload<_> = ExtendedAdvertisementBuilder::new()
         .flags(&[Flag::GeneralDiscovery, Flag::LE_Only])
@@ -148,12 +142,7 @@ async fn main(spawner: Spawner) -> ! {
                 }
             }
         });
-        let notify_task_future = notify_task(
-            &conn,
-            characteristic.value_handle,
-            &notify_enabled,
-            &STORAGE,
-        );
+        let notify_task_future = notify_task(&conn, characteristic.value_handle, &notify_enabled);
 
         pin_mut!(gatt_server_future);
         pin_mut!(notify_task_future);

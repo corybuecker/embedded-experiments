@@ -48,6 +48,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34efbcccd345379ca2868b2b2c9d3782e9cc58ba87bc7d79d5b53d9c9ae6f25d"
 
 [[package]]
+name = "ble-notification"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rt",
+ "defmt 1.0.1",
+ "defmt-rtt",
+ "embassy-executor",
+ "embassy-nrf",
+ "embassy-sync 0.7.2",
+ "embassy-time 0.5.0",
+ "futures",
+ "heapless 0.9.1",
+ "nrf-softdevice",
+ "panic-probe",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -286,24 +304,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.106",
-]
-
-[[package]]
-name = "embassy-experiment"
-version = "0.1.0"
-dependencies = [
- "cortex-m",
- "cortex-m-rt",
- "defmt 1.0.1",
- "defmt-rtt",
- "embassy-executor",
- "embassy-nrf",
- "embassy-sync 0.7.2",
- "embassy-time 0.5.0",
- "futures",
- "heapless 0.9.1",
- "nrf-softdevice",
- "panic-probe",
 ]
 
 [[package]]
