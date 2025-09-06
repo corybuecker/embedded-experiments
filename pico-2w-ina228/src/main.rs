@@ -27,7 +27,7 @@ async fn main(spawner: Spawner) -> ! {
     unwrap!(read_shunt_calibration(&mut i2c, device_address).await);
 
     loop {
-        Timer::after_millis(50).await;
+        Timer::after_millis(500).await;
         let reading = unwrap!(read_current(&mut i2c, device_address).await);
         info!("{}mA", reading);
     }
@@ -211,5 +211,5 @@ fn current_lsb() -> f32 {
     let divisor = divisor.pow(19);
     let divisor = divisor as f32;
 
-    0.5 / divisor
+    2.5 / divisor
 }
