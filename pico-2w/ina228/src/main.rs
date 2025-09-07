@@ -14,7 +14,7 @@ use embassy_rp::peripherals::I2C0;
 use embassy_time::Timer;
 
 #[embassy_executor::main]
-async fn main(spawner: Spawner) -> ! {
+async fn main(_spawner: Spawner) -> ! {
     let p = embassy_rp::init(Default::default());
 
     let mut i2c = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, Config::default());
@@ -44,7 +44,7 @@ async fn reset_device(
 
     i2c.blocking_write_read(device_address, &reset_device_command, &mut register_buffer)?;
 
-    if !register_buffer.eq(&[0x00, 0x00]) {}
+    let _ = register_buffer.eq(&[0x00, 0x00]);
 
     Timer::after_millis(10).await;
     info!("Device reset successfully");
@@ -52,6 +52,7 @@ async fn reset_device(
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn read_bus_voltage(
     i2c: &mut I2c<'_, I2C0, Blocking>,
     address: u8,
@@ -72,6 +73,7 @@ async fn read_bus_voltage(
     Ok(volts)
 }
 
+#[allow(dead_code)]
 async fn read_shunt_voltage(
     i2c: &mut I2c<'_, I2C0, Blocking>,
     address: u8,
@@ -193,7 +195,7 @@ async fn calibrate_shunt_resistor(
 ) -> Result<(), i2c::Error> {
     let register: u8 = 0x02; // Shunt calibration register
     let current_lsb = current_lsb();
-    let r_shunt = 0.025 as f32;
+    let r_shunt = 0.025_f32;
 
     let value = 13107.2e6 * current_lsb * r_shunt;
     let value = value as u16;
@@ -207,7 +209,7 @@ async fn calibrate_shunt_resistor(
 }
 
 fn current_lsb() -> f32 {
-    let divisor = 2 as u32;
+    let divisor = 2_u32;
     let divisor = divisor.pow(19);
     let divisor = divisor as f32;
 

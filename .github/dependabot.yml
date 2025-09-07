@@ -1,11 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: "cargo"
-    directory: "/"
+    directories:
+      - ble-notifications
+      - pico-2w-i2c-usb
+      - pico-2w-ina228
+      - read-usb
+      - subscriber
     schedule:
       interval: "weekly"
-
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - /
     schedule:
       interval: "weekly"

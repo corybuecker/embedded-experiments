@@ -9,50 +9,60 @@ permissions:
   contents: read
 
 jobs:
-  lint-rust-subscriber:
+  lint-rust-host:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./subscriber
+        working-directory: ./host
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42
         with:
           components: clippy
+          cache-workspaces: |
+            host
+            pico-2w
+            nRF52840
       - run: |
           sudo apt-get update
           sudo apt-get install -y libdbus-1-dev pkg-config
       - run: cargo clippy -- -D warnings
 
-  lint-embassy-experiment:
+  lint-rust-pico-2w:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./embassy-experiment
+        working-directory: ./pico-2w
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42
         with:
+          target: thumbv8m.main-none-eabihf
           components: clippy
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config
+          cache-workspaces: |
+            host
+            pico-2w
+            nRF52840
       - run: cargo clippy -- -D warnings
 
-  test-rust-subscriber:
+  lint-rust-nRF52840:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./subscriber
+        working-directory: ./nRF52840
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - uses: actions-rust-lang/setup-rust-toolchain@ab6845274e2ff01cd4462007e1a9d9df1ab49f42
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config
-      - run: cargo test --bin subscriber
+        with:
+          target: thumbv7em-none-eabihf
+          components: clippy
+          cache-workspaces: |
+            host
+            pico-2w
+            nRF52840
+      - run: cargo clippy -- -D warnings
 
-  lint-c:
+  lint-c-zephyr:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -66,8 +76,9 @@ jobs:
   check-success:
     runs-on: ubuntu-latest
     needs:
-      - lint-rust-subscriber
-      - test-rust-subscriber
-      - lint-c
+      - lint-rust-host
+      - lint-rust-pico-2w
+      - lint-rust-nRF52840
+      - lint-c-zephyr
     steps:
       - run: echo true

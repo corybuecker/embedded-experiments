@@ -37,10 +37,9 @@ fn main() {
             .device_descriptor()
             .expect("Failed to get device descriptor");
 
-
         // Replace these IDs with your CDC device's vendor/product IDs
         if device_desc.vendor_id() == 0xc0de && device_desc.product_id() == 0xcafe {
-            let mut handle = device.open().expect("Failed to open device");
+            let handle = device.open().expect("Failed to open device");
 
             for i in device.config_descriptor(0).unwrap().interfaces() {
                 for j in i.descriptors() {
@@ -49,7 +48,6 @@ fn main() {
                     }
                 }
             }
-            
 
             // Claim interface 0 (CDC usually uses 0 or 1)
             handle
