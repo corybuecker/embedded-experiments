@@ -1,88 +1,37 @@
 #![no_std]
 #![no_main]
 
+mod common;
 mod notify_server;
 mod storage;
+mod tasks;
 
-use crate::storage::SharedMeasurements;
-use crate::{notify_server::NotifyServer, storage::Measurements};
+use crate::notify_server::NotifyServer;
+use crate::tasks::{add_empty_measurements, notify_task, sensor_task, softdevice_task};
 use core::cell::Cell;
-use defmt::{error, info, *};
-use defmt_rtt as _;
+use defmt::{info, unwrap};
 use embassy_executor::Spawner;
 use embassy_nrf::gpio::Input;
-use embassy_nrf::{self as _, config, interrupt::Priority};
-use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::blocking_mutex::{CriticalSectionMutex, Mutex};
-use embassy_time::Timer;
+use embassy_nrf::{config, interrupt::Priority};
+use embassy_sync::blocking_mutex::Mutex;
 use futures::{future::select, pin_mut};
+use nrf_softdevice::ble::Uuid;
+use nrf_softdevice::ble::gatt_server::builder::ServiceBuilder;
 use nrf_softdevice::{
-    self as _, Softdevice,
+    Softdevice,
     ble::{
-        Connection, Uuid,
         advertisement_builder::{
             AdvertisementPayload, ExtendedAdvertisementBuilder, Flag, ServiceList, ServiceUuid16,
         },
         gatt_server::{
             self,
-            builder::ServiceBuilder,
             characteristic::{self, Properties},
-            notify_value,
         },
         peripheral,
     },
 };
-use panic_probe as _;
 
 static SCAN_DATA: [u8; 0] = [];
-static STORAGE: SharedMeasurements = CriticalSectionMutex::new(Measurements::new());
-
-async fn notify_task<'a>(
-    conn: &'a Connection,
-    value_handle: u16,
-    notify_enabled: &'a Mutex<NoopRawMutex, Cell<bool>>,
-) -> ! {
-    loop {
-        if notify_enabled.lock(|flag| flag.get()) {
-            let sum = STORAGE.lock(|m| m.sum());
-
-            match notify_value(conn, value_handle, &[sum]) {
-                Ok(()) => {}
-                Err(e) => {
-                    error!("Failed to notify value: {}", e);
-                }
-            }
-        }
-        Timer::after_millis(250).await;
-    }
-}
-
-#[embassy_executor::task]
-async fn sensor_task(mut sensor: Input<'static>) {
-    loop {
-        STORAGE.lock(|m| m.unlock());
-        sensor.wait_for_high().await;
-        STORAGE.lock(|m| m.lock());
-
-        while sensor.is_high() {
-            STORAGE.lock(|m| m.add(0x1));
-            Timer::after_millis(100).await;
-        }
-    }
-}
-
-#[embassy_executor::task]
-async fn add_empty_measurements() {
-    loop {
-        STORAGE.lock(|m| m.add_if_unlocked(0x0));
-        Timer::after_millis(100).await;
-    }
-}
-
-#[embassy_executor::task]
-async fn softdevice_task(sd: &'static Softdevice) -> ! {
-    sd.run().await
-}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) -> ! {
@@ -108,9 +57,11 @@ async fn main(spawner: Spawner) -> ! {
         NotifyServer::new(characteristic.cccd_handle, characteristic.value_handle);
     let notify_enabled = Mutex::new(Cell::new(false));
 
+    // Start the BLE stack
     unwrap!(spawner.spawn(softdevice_task(sd)));
-    unwrap!(spawner.spawn(sensor_task(sensor)));
-    unwrap!(spawner.spawn(add_empty_measurements()));
+
+    // unwrap!(spawner.spawn(sensor_task(sensor)));
+    // unwrap!(spawner.spawn(add_empty_measurements()));
 
     let adv_data: AdvertisementPayload<_> = ExtendedAdvertisementBuilder::new()
         .flags(&[Flag::GeneralDiscovery, Flag::LE_Only])
@@ -123,13 +74,16 @@ async fn main(spawner: Spawner) -> ! {
         scan_data: &SCAN_DATA,
     };
 
-    let config = peripheral::Config::default();
+    let ble_peripheral_config = nrf_softdevice::ble::peripheral::Config::default();
+    info!("advertising done");
 
     #[allow(clippy::empty_loop)]
     loop {
         notify_enabled.lock(|flag| flag.set(false));
 
-        let conn = unwrap!(peripheral::advertise_connectable(sd, advertising, &config).await);
+        let conn = unwrap!(
+            peripheral::advertise_connectable(sd, advertising, &ble_peripheral_config).await
+        );
         info!("advertising done");
 
         let notify_enabled_ref = &notify_enabled;

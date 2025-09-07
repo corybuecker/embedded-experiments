@@ -1,0 +1,25 @@
+[package]
+name = "ble-advertise"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+bt-hci = "0.6.0"
+critical-section = "1.2.0"
+defmt = { version = "1" }
+defmt-rtt = "1.1.0"
+embassy-executor = { version = "0.9.0" }
+embassy-futures = "0.1.2"
+embassy-sync = { version = "0.7.2", features = ["defmt"] }
+embassy-time = "0.5.0"
+esp-alloc = "0.9.0"
+esp-backtrace = { version = "0.18.0", features = ["panic-handler", "esp32c6", "defmt"] }
+esp-bootloader-esp-idf = { version = "0.3.0", features = ["esp32c6"] }
+esp-hal = { version = "=1.0.0-rc.1", features = ["esp32c6", "unstable", "defmt"] }
+esp-radio = { version = "0.16.0", features = [  "ble",  "esp-alloc",  "esp32c6",  "unstable"] }
+esp-rtos = { version = "0.1.1", features = ["embassy",  "esp-alloc",  "esp-radio",  "esp32c6"] }
+heapless = { version = "0.9.1", features = ["defmt"] }
+static_cell      = "2.1.1"
+trouble-host = { version = "0.5.0", features = ["defmt"] }
+uuid = { version = "1.18.1", default-features = false }

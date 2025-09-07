@@ -7,27 +7,70 @@ use defmt::debug;
 use defmt::info;
 use defmt::unwrap;
 use embassy_executor::Spawner;
+use embassy_rp::clocks::ClockConfig;
+use embassy_rp::config::Config;
+use embassy_rp::gpio::Input;
+use embassy_rp::gpio::Output;
+use embassy_rp::gpio::Pull;
 use embassy_rp::i2c::Blocking;
 use embassy_rp::i2c::I2c;
-use embassy_rp::i2c::{self, Config};
+use embassy_rp::i2c::{self};
 use embassy_rp::peripherals::I2C0;
 use embassy_time::Timer;
 
-#[embassy_executor::main]
-async fn main(_spawner: Spawner) -> ! {
-    let p = embassy_rp::init(Default::default());
+#[embassy_executor::task]
+pub async fn read_sensor_level(mut _sensor: Input<'static>) -> ! {
+    loop {
+        // debug!("Sensor level: {:?}", sensor.get_level());
 
-    let mut i2c = I2c::new_blocking(p.I2C0, p.PIN_1, p.PIN_0, Config::default());
+        Timer::after_millis(500).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn square_wave(mut output: Output<'static>) {
+    loop {
+        output.set_high();
+        Timer::after_millis(50).await;
+        output.set_low();
+        Timer::after_millis(50).await;
+    }
+}
+
+#[embassy_executor::main]
+async fn main(spawner: Spawner) -> ! {
+    let clock_config = unwrap!(ClockConfig::system_freq(50_000_000));
+    let rp_config = Config::new(clock_config);
+    let peripherals = embassy_rp::init(rp_config);
+
+    let i2c_config = i2c::Config::default();
+    let mut i2c = I2c::new_blocking(
+        peripherals.I2C0,
+        peripherals.PIN_1,
+        peripherals.PIN_0,
+        i2c_config,
+    );
     let device_address: u8 = 0x40; // Adafruit INA228, A0 and A1 tied to GND, 1000000, R/W low
 
+    // let oscilliscope = peripherals.PIN_2;
+    // let oscilliscope = Output::new(oscilliscope, Level::Low);
+
+    let sensor = peripherals.PIN_2;
+    let sensor = Input::new(sensor, Pull::None);
+
     unwrap!(reset_device(&mut i2c, device_address).await);
+    unwrap!(set_adcrange_low(&mut i2c, device_address).await);
     unwrap!(read_config_register(&mut i2c, device_address).await);
+    unwrap!(write_adc_config(&mut i2c, device_address).await);
     unwrap!(read_adc_config(&mut i2c, device_address).await);
     unwrap!(calibrate_shunt_resistor(&mut i2c, device_address).await);
     unwrap!(read_shunt_calibration(&mut i2c, device_address).await);
 
+    unwrap!(spawner.spawn(read_sensor_level(sensor)));
+    // unwrap!(spawner.spawn(square_wave(oscilliscope)));
+
     loop {
-        Timer::after_millis(500).await;
+        Timer::after_millis(50).await;
         let reading = unwrap!(read_current(&mut i2c, device_address).await);
         info!("{}mA", reading);
     }
@@ -49,6 +92,27 @@ async fn reset_device(
     Timer::after_millis(10).await;
     info!("Device reset successfully");
 
+    Ok(())
+}
+
+async fn set_adcrange_low(
+    i2c: &mut i2c::I2c<'_, I2C0, Blocking>,
+    device_address: u8,
+) -> Result<(), i2c::Error> {
+    let reset_register: u8 = 0x00; // 0000 0000
+    let reset_command_1: u8 = 0x00; // 0000 0000
+    let reset_command_2: u8 = 0x10; // 0001 0000
+
+    let reset_device_command: [u8; 3] = [reset_register, reset_command_1, reset_command_2];
+
+    let mut register_buffer = [0u8; 2];
+
+    i2c.blocking_write_read(device_address, &reset_device_command, &mut register_buffer)?;
+
+    let _ = register_buffer.eq(&[0x00, 0x00]);
+
+    Timer::after_millis(10).await;
+    info!("Device reset successfully");
     Ok(())
 }
 
@@ -141,6 +205,19 @@ async fn read_config_register(
     Ok(())
 }
 
+async fn write_adc_config(
+    i2c: &mut I2c<'_, I2C0, Blocking>,
+    address: u8,
+) -> Result<(), i2c::Error> {
+    let register: [u8; 1] = [0x01]; // Configuration register
+    let command: u16 = 0xFBAB; // 1111 1011 1010 1011
+    let command: [u8; 2] = command.to_be_bytes();
+    let command: [u8; 3] = [register[0], command[0], command[1]];
+    i2c.blocking_write(address, &command)?;
+
+    Ok(())
+}
+
 async fn read_adc_config(i2c: &mut I2c<'_, I2C0, Blocking>, address: u8) -> Result<(), i2c::Error> {
     let register: u8 = 0x01; // Configuration register
     let mut buffer = [0u8; 2];
@@ -195,9 +272,9 @@ async fn calibrate_shunt_resistor(
 ) -> Result<(), i2c::Error> {
     let register: u8 = 0x02; // Shunt calibration register
     let current_lsb = current_lsb();
-    let r_shunt = 0.025_f32;
+    let r_shunt = 0.010_f32;
 
-    let value = 13107.2e6 * current_lsb * r_shunt;
+    let value = 13107.2e6 * current_lsb * r_shunt * 4.0;
     let value = value as u16;
     let value: [u8; 2] = value.to_be_bytes();
 
@@ -213,5 +290,5 @@ fn current_lsb() -> f32 {
     let divisor = divisor.pow(19);
     let divisor = divisor as f32;
 
-    2.5 / divisor
+    0.10 / divisor
 }
