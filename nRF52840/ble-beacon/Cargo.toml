@@ -1,5 +1,5 @@
 [package]
-name = "ble-notification"
+name = "ble-beacon"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,8 +8,9 @@ cortex-m = { version = "0.7.7" }
 cortex-m-rt = "0.7.5"
 defmt = { version = "1" }
 defmt-rtt = "1"
-embassy-executor = { version = "0.8.0", features = ["arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
-embassy-nrf = { version = "0.8.0", features = ["nrf52840", "gpiote", "time", "time-driver-rtc1"] }
+embassy-executor = { version = "0.9.0", features = ["arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
+embassy-futures = "0.1.2"
+embassy-nrf = { version = "0.8.0", features = ["nrf52840", "gpiote", "time", "time-driver-rtc1", "unstable-pac"] }
 embassy-sync = { version = "0.7.2" }
 embassy-time = { version = "0.5.0", features = ["defmt", "defmt-timestamp-uptime"] }
 futures = { version = "0.3.31", default-features = false }

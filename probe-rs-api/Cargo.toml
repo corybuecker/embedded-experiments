@@ -1,0 +1,10 @@
+[package]
+name = "probe-rs-api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+probe-rs = { path = "../../probe-rs/probe-rs" }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }

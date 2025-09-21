@@ -60,8 +60,8 @@ async fn main(spawner: Spawner) -> ! {
     // Start the BLE stack
     unwrap!(spawner.spawn(softdevice_task(sd)));
 
-    unwrap!(spawner.spawn(sensor_task(sensor)));
-    unwrap!(spawner.spawn(add_empty_measurements()));
+    // unwrap!(spawner.spawn(sensor_task(sensor)));
+    // unwrap!(spawner.spawn(add_empty_measurements()));
 
     let adv_data: AdvertisementPayload<_> = ExtendedAdvertisementBuilder::new()
         .flags(&[Flag::GeneralDiscovery, Flag::LE_Only])
@@ -75,6 +75,7 @@ async fn main(spawner: Spawner) -> ! {
     };
 
     let ble_peripheral_config = nrf_softdevice::ble::peripheral::Config::default();
+    info!("advertising done");
 
     #[allow(clippy::empty_loop)]
     loop {

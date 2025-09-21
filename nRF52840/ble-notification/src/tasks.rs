@@ -1,6 +1,6 @@
 use crate::storage::{Measurements, SharedMeasurements};
 use core::cell::Cell;
-use defmt::{error, info};
+use defmt::error;
 use embassy_nrf::gpio::Input;
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::blocking_mutex::{CriticalSectionMutex, Mutex};
