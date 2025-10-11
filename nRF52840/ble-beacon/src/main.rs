@@ -12,7 +12,7 @@ use embassy_time::{Duration, Timer};
 use nrf_softdevice::{
     Softdevice,
     ble::{
-        advertisement_builder::{ExtendedAdvertisementBuilder, ServiceList, ServiceUuid16},
+        advertisement_builder::{ExtendedAdvertisementBuilder, ServiceList},
         peripheral::{self, NonconnectableAdvertisement, advertise},
     },
 };
@@ -35,12 +35,14 @@ async fn main(spawner: Spawner) -> ! {
 
     let _beacon_server = beacon_server::BeaconServer {};
     unwrap!(spawner.spawn(softdevice_task(softdevice)));
-    let mut data: u16 = 0;
+
+    let mut data: u128 = 0;
+
     loop {
         data += 1;
 
         let scan_data = ExtendedAdvertisementBuilder::new()
-            .services_16(ServiceList::Complete, &[ServiceUuid16::from_u16(data)])
+            .services_128(ServiceList::Complete, &[data.to_le_bytes()])
             .build();
 
         let advertisement = NonconnectableAdvertisement::ScannableUndirected {
