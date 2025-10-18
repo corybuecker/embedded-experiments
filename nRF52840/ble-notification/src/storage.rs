@@ -9,7 +9,7 @@ use heapless::HistoryBuf;
 pub type SharedMeasurements = CriticalSectionMutex<Measurements>;
 
 pub struct Measurements {
-    inner: RefCell<HistoryBuf<u8, 25>>,
+    inner: RefCell<HistoryBuf<u8, 600>>,
     locked: AtomicBool,
 }
 

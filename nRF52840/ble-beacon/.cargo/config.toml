@@ -9,7 +9,7 @@ DEFMT_LOG = "trace"
 
 [profile.dev]
 debug = true
-opt-level = 1
+# opt-level = 1
 
 [profile.release]
 debug = false
