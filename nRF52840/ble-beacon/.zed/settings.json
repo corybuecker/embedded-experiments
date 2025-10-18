@@ -8,7 +8,7 @@
       "initialization_options": {
         "cargo": {
           "allTargets": false,
-          "target": "thumbv7em-none-eabi"
+          "target": "thumbv7em-none-eabihf"
         }
       }
     }
