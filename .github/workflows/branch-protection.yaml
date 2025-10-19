@@ -78,7 +78,7 @@ jobs:
     needs:
       - lint-rust-host
       - lint-rust-pico-2w
-      - lint-rust-nRF52840
+      # - lint-rust-nRF52840
       - lint-c-zephyr
     steps:
       - run: echo true

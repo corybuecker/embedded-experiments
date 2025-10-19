@@ -1,0 +1,16 @@
+{
+  "format_on_save": "on",
+  "inlay_hints": {
+    "enabled": true
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "allTargets": false,
+          "target": "thumbv8m.main-none-eabihf"
+        }
+      }
+    }
+  }
+}
