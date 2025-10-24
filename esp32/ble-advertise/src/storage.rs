@@ -129,3 +129,231 @@ impl Events {
             .collect::<Vec<u16, 8>>()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use embassy_time::Duration;
+    use futures::executor::block_on;
+
+    #[test]
+    fn test_new_events_initializes_with_zero_values() {
+        block_on(async {
+            let start_time = Instant::now();
+            let events = Events::new_with_time(start_time);
+
+            let report = events.report().await;
+            assert_eq!(report.len(), 8);
+            for value in report.iter() {
+                assert_eq!(*value, 0);
+            }
+        });
+    }
+
+    #[test]
+    fn test_record_high_increments_all_buckets() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            events.record_at_time(RecordType::High, start_time).await;
+
+            let report = events.report().await;
+            for value in report.iter() {
+                assert_eq!(*value, 1);
+            }
+        });
+    }
+
+    #[test]
+    fn test_record_low_does_not_increment_buckets() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            events.record_at_time(RecordType::Low, start_time).await;
+
+            let report = events.report().await;
+            for value in report.iter() {
+                assert_eq!(*value, 0);
+            }
+        });
+    }
+
+    #[test]
+    fn test_multiple_high_records_increment_correctly() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            events.record_at_time(RecordType::High, start_time).await;
+            events
+                .record_at_time(RecordType::High, start_time + Duration::from_millis(100))
+                .await;
+            events
+                .record_at_time(RecordType::High, start_time + Duration::from_millis(200))
+                .await;
+
+            let report = events.report().await;
+            for value in report.iter() {
+                assert_eq!(*value, 3);
+            }
+        });
+    }
+
+    #[test]
+    fn test_bucket_cleaning_after_cutoff_time() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            // Record a high event
+            events.record_at_time(RecordType::High, start_time).await;
+
+            // First bucket has 500ms cutoff, advance time beyond that
+            let future_time = start_time + Duration::from_millis(600);
+            events
+                .record_at_time(RecordType::Low, future_time)
+                .await;
+
+            let report = events.report().await;
+            // First bucket (500ms cutoff) should be decremented to 0
+            assert_eq!(report[0], 0);
+            // Other buckets should still be 1
+            for i in 1..8 {
+                assert_eq!(report[i], 1);
+            }
+        });
+    }
+
+    #[test]
+    fn test_bucket_cleaning_multiple_buckets() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            // Record a high event
+            events.record_at_time(RecordType::High, start_time).await;
+
+            // Advance time beyond second bucket cutoff (1000ms)
+            let future_time = start_time + Duration::from_millis(1100);
+            events
+                .record_at_time(RecordType::Low, future_time)
+                .await;
+
+            let report = events.report().await;
+            // First two buckets (500ms, 1000ms cutoffs) should be decremented to 0
+            assert_eq!(report[0], 0);
+            assert_eq!(report[1], 0);
+            // Other buckets should still be 1
+            for i in 2..8 {
+                assert_eq!(report[i], 1);
+            }
+        });
+    }
+
+    #[test]
+    fn test_bucket_values_do_not_go_negative() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            // Don't record any events, just advance time
+            let future_time = start_time + Duration::from_millis(600);
+            events
+                .record_at_time(RecordType::Low, future_time)
+                .await;
+
+            let report = events.report().await;
+            // All buckets should remain at 0
+            for value in report.iter() {
+                assert_eq!(*value, 0);
+            }
+        });
+    }
+
+    #[test]
+    fn test_incremental_bucket_decay() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            // Record multiple high events
+            events.record_at_time(RecordType::High, start_time).await;
+            events
+                .record_at_time(RecordType::High, start_time + Duration::from_millis(100))
+                .await;
+            events
+                .record_at_time(RecordType::High, start_time + Duration::from_millis(200))
+                .await;
+
+            // All buckets should have value 3
+            let report = events.report().await;
+            for value in report.iter() {
+                assert_eq!(*value, 3);
+            }
+
+            // Advance time beyond first bucket cutoff
+            let future_time = start_time + Duration::from_millis(600);
+            events
+                .record_at_time(RecordType::Low, future_time)
+                .await;
+
+            let report = events.report().await;
+            // First bucket should decrement by 1 to value 2
+            assert_eq!(report[0], 2);
+            // Other buckets should still be 3
+            for i in 1..8 {
+                assert_eq!(report[i], 3);
+            }
+        });
+    }
+
+    #[test]
+    fn test_all_buckets_decay_over_long_time() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            // Record a high event
+            events.record_at_time(RecordType::High, start_time).await;
+
+            // Advance time beyond all bucket cutoffs (past 300s)
+            let future_time = start_time + Duration::from_millis(301_000);
+            events
+                .record_at_time(RecordType::Low, future_time)
+                .await;
+
+            let report = events.report().await;
+            // All buckets should be decremented to 0
+            for value in report.iter() {
+                assert_eq!(*value, 0);
+            }
+        });
+    }
+
+    #[test]
+    fn test_mixed_record_types() {
+        block_on(async {
+            let start_time = Instant::now();
+            let mut events = Events::new_with_time(start_time);
+
+            events.record_at_time(RecordType::High, start_time).await;
+            events
+                .record_at_time(RecordType::Low, start_time + Duration::from_millis(100))
+                .await;
+            events
+                .record_at_time(RecordType::High, start_time + Duration::from_millis(200))
+                .await;
+            events
+                .record_at_time(RecordType::Low, start_time + Duration::from_millis(300))
+                .await;
+
+            let report = events.report().await;
+            // Should have 2 high events recorded
+            for value in report.iter() {
+                assert_eq!(*value, 2);
+            }
+        });
+    }
+}
