@@ -10,7 +10,10 @@ rustflags = [
 ]
 
 [env]
-DEFMT_LOG="info"
+DEFMT_LOG="debug"
 
 [unstable]
 build-std = ["alloc", "core"]
+
+[profile.release]
+debug = 2

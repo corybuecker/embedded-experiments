@@ -19,6 +19,7 @@ esp-bootloader-esp-idf = { version = "0.3.0", features = ["esp32c6"] }
 esp-hal = { version = "=1.0.0-rc.1", features = ["esp32c6", "unstable", "defmt"] }
 esp-radio = { version = "0.16.0", features = [  "ble",  "esp-alloc",  "esp32c6",  "unstable"] }
 esp-rtos = { version = "0.1.1", features = ["embassy",  "esp-alloc",  "esp-radio",  "esp32c6"] }
+event-storage = { path = "../event-storage" }
 heapless = { version = "0.9.1", features = ["defmt"] }
 static_cell      = "2.1.1"
 trouble-host = { version = "0.5.0", features = ["defmt"] }
