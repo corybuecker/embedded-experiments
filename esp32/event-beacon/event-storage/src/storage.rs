@@ -106,8 +106,9 @@ impl Events {
             .collect::<Vec<u8, 16>>();
 
         let bytes = bytes.as_slice().try_into()?;
+        let uuid = Uuid::from_bytes(bytes);
 
-        Ok(Uuid::from_bytes(bytes))
+        Ok(uuid)
     }
 }
 
