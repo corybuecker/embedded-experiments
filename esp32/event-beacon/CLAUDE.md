@@ -4,57 +4,72 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an ESP32-C6 embedded Rust project for BLE (Bluetooth Low Energy) advertising. It uses the `no_std` embedded environment and runs on bare metal with the ESP32-C6 RISC-V microcontroller.
+This is an ESP32-C6 embedded Rust project that implements a BLE GATT server for event monitoring. The system reads GPIO input events, tracks them over multiple time windows, and encodes the statistics into a UUID that's advertised via BLE. Devices can connect via GATT to receive event notifications.
 
-## Key Architecture
+## Architecture
+
+### Workspace Structure
+
+This is a Cargo workspace with two crates:
+
+- **`ble-advertise`**: Main binary that runs on the ESP32-C6. Implements BLE advertising and GATT server functionality.
+- **`event-storage`**: Library crate providing the event tracking system. Used by `ble-advertise` and includes tests.
 
 ### Hardware Target
 
 - **Chip**: ESP32-C6 (RISC-V 32-bit)
-- **Target triple**: `riscv32imac-unknown-none-elf`
-- **CPU Clock**: Configured to max speed
+- **Target**: `riscv32imac-unknown-none-elf` (configured in `.cargo/config.toml`)
+- **Runner**: `probe-rs` for flashing via JTAG
 
 ### Runtime Environment
 
-- **Executor**: `embassy-executor` for async task management
-- **RTOS**: `esp-rtos` with Embassy integration
-- **Memory**: 128KB heap allocated via `esp-alloc`
-- **Radio**: BLE controller via `esp-radio` and `trouble-host` stack
+- **No standard library** (`no_std`) - uses `core` and `alloc` only
+- **Executor**: `embassy-executor` for async task scheduling
+- **RTOS**: `esp-rtos` provides Embassy integration with ESP hardware
+- **Memory**: 64KB heap via `esp-alloc`
+- **Logging**: `esp-println` with log level `Debug`
 
-### Module Structure
+### Event Tracking System (`event-storage`)
 
-**`src/main.rs`** - Application entry point
+The core data structure is `Events` (in `event-storage/src/storage.rs`), which:
 
-- Initializes hardware peripherals and Embassy runtime
-- Sets up BLE controller and host stack
-- Currently contains test code for event recording (advertising logic is commented out)
+- Stores up to 3000 events in a ring buffer (`HistoryBuf<u8, 3000>`)
+- Tracks high/low events from GPIO input (1 for high, 0 for low)
+- Maintains 8 time buckets: [1s, 5s, 30s, 60s, 120s, 240s, 360s, 600s]
+- Calculates counts dynamically based on average duration between updates
+- Encodes bucket counts into a UUID (8 buckets × 2 bytes = 16-byte UUID)
 
-**`src/storage.rs`** - Time-based event tracking system
+The system uses Embassy's `Mutex<NoopRawMutex>` for thread-safe access (single-core, no preemption needed).
 
-- `Events` struct tracks events across 8 time buckets (500ms to 5 minutes)
-- Each `Bucket` maintains a count that decays over time
-- Thread-safe using Embassy's `Mutex` (NoopRawMutex for single-core)
-- Purpose: Track sensor readings or event frequency over different time windows
+### BLE Implementation (`ble-advertise`)
 
-**`src/common.rs`** - Common imports and utilities
+The main application (`ble-advertise/src/main.rs`) implements three concurrent tasks via `select3`:
 
-- Defmt RTT logging setup with microsecond timestamps
-- Re-exports for backtrace and allocator
+1. **BLE host stack runner**: Manages BLE controller communication
+2. **Event collector** (`collect_events`): Polls GPIO10 every 100ms and records high/low transitions
+3. **Advertising/GATT loop** (`advertise`):
+   - Advertises with UUID derived from event statistics
+   - Accepts connections
+   - Creates GATT attribute table with one characteristic (UUID 0x0001, notify property)
+   - Waits for disconnection
 
-### BLE Stack
-
-- Uses `trouble-host` for BLE host implementation
-- `ExternalController` wraps the ESP32 BLE radio
-- Supports non-connectable scannable advertising (code currently commented)
-- Advertising data encoded with device name "Beacon1"
+BLE stack uses:
+- `trouble-host` for host implementation
+- `esp-radio` with `ExternalController` wrapper for ESP32 BLE radio
+- `DefaultPacketPool` for packet management
+- Connectable scannable undirected advertising
 
 ## Build and Development Commands
 
 ### Building
 
 ```bash
-# Build for ESP32-C6 (automatically uses correct target from .cargo/config.toml)
+# Build for ESP32-C6 (target auto-configured)
 cargo build
+
+# Build specific crate
+cargo build -p ble-advertise
+cargo build -p event-storage
 
 # Release build
 cargo build --release
@@ -63,50 +78,60 @@ cargo build --release
 ### Running/Flashing
 
 ```bash
-# Build and flash to device (uses probe-rs runner configured in .cargo/config.toml)
+# Flash to device and run (uses probe-rs)
 cargo run
 
 # Release run
 cargo run --release
 ```
 
-The runner command automatically:
-
-- Flashes to ESP32-C6 chip
-- Pre-verifies the binary
+The runner automatically:
+- Flashes via JTAG to ESP32-C6
+- Pre-verifies binary
 - Prints stack traces on panic
 - Catches hard faults
 
-### Logging
+### Testing
 
-- Logging level controlled by `DEFMT_LOG` environment variable (set to "trace" in `.cargo/config.toml`)
-- Uses `defmt` with RTT (Real-Time Transfer) for efficient embedded logging
-- Timestamps show microseconds since boot
+```bash
+# Run tests for event-storage library
+cargo test -p event-storage
+
+# Run specific test
+cargo test -p event-storage test_record_high_increments_all_buckets
+```
+
+Tests use `futures::executor::block_on` to test async code and simulate time using `Instant::from_ticks`.
 
 ## Important Constraints
 
 ### Embedded Environment
 
-- `#![no_std]` - No standard library (use `core` and `alloc` instead)
-- `#![no_main]` - Custom entry point via `#[esp_rtos::main]`
-- Fixed-size collections from `heapless` crate (no dynamic allocation for collections)
-- All async code must be `Send` and work with Embassy's executor
+- `#![no_std]` - No standard library (must use `core`/`alloc`)
+- `#![no_main]` - Entry point is `#[esp_rtos::main]`
+- Stack size is limited
+- Use `heapless` collections for fixed-size data structures
+- Use `StaticCell` for static allocation of large types (like radio controller)
+- All async code must work with Embassy's executor
+
+### BLE Constraints
+
+- Max advertising data: 32 bytes (in current implementation)
+- Max scan response data: typically 31 bytes
+- Data must be encoded using `AdStructure` from `bt-hci`
+- UUID encoding: big-endian u16 values packed into 16-byte UUID
 
 ### Memory Management
 
-- Stack size is limited (typical embedded constraint)
-- Heap size is 128KB
-- Use `StaticCell` for static allocation of large types
-- Prefer stack allocation or static storage when possible
+- 64KB heap (configured in `main.rs:24`)
+- Use static allocation where possible
+- Ring buffers are fixed-size at compile time
 
-### BLE Advertising Data
+## Key Dependencies
 
-- Maximum advertising data: 64 bytes
-- Maximum scan response data: 128 bytes
-- Must be encoded using `AdStructure` types from `bt-hci`
-
-## Development Notes
-
-- The main advertising loop is currently commented out (lines 79-120 in `src/main.rs`)
-- Test code records 3 high-priority events and reports bucket values after 5 seconds
-- The `Events` system is designed to encode time-windowed event counts into BLE UUID service data
+- `embassy-*`: Async runtime and HAL abstractions
+- `esp-*`: ESP32 hardware support (HAL, allocator, bootloader, radio)
+- `trouble-host`: BLE host stack implementation
+- `bt-hci`: Bluetooth HCI types and encoding
+- `heapless`: Fixed-capacity collections for `no_std`
+- `static_cell`: Safe static mutable state initialization

@@ -12,7 +12,7 @@ use tokio_stream::StreamExt;
 use tracing::{debug, error};
 use uuid::Uuid;
 
-static SERVICE_UUID: &str = "0000183b-0000-1000-8000-00805f9b34fb";
+static SERVICE_UUID: &str = "00000000-0000-1000-8000-00805f9b34fb";
 static BLUETOOTH_ADVERTISING_INTERVAL: u64 = 1280; // in milliseconds
 
 pub async fn connect(adapter: &Adapter) -> Result<Peripheral> {
@@ -31,6 +31,10 @@ async fn connect_to_peripheral(adapter: Adapter) -> Result<Peripheral> {
     adapter.stop_scan().await?;
 
     let peripherals = adapter.peripherals().await.unwrap();
+
+    for peripheral in &peripherals {
+        tracing::debug!("{:?}", peripheral);
+    }
 
     let peripheral = peripherals.first();
 
@@ -67,41 +71,38 @@ pub async fn wait_for_notify(peripheral: &Peripheral) -> Result<usize> {
     let join_handle = spawn(collect_samples(peripheral.clone()));
 
     match timeout(Duration::from_millis(10000), join_handle).await {
-        Ok(Ok(samples)) => Ok(samples?),
+        Ok(Ok(samples)) => {
+            tracing::debug!("{:?}", samples);
+
+            Ok(samples?)
+        }
         Ok(Err(e)) => Err(anyhow!("Error collecting samples: {e}")),
         Err(_) => Err(anyhow!("Timeout collecting samples")),
     }
 }
 
 async fn collect_samples(peripheral: Peripheral) -> Result<usize> {
-    let notifications = peripheral
-        .notifications()
+    let notifications = peripheral.notifications();
+
+    let notifications = notifications
         .await?
-        .take(3)
         .map(|s| s.value)
-        .map(|samples| -> Result<[u8; 1], anyhow::Error> {
-            if samples.len() != 1 {
-                error!("Insufficient data: expected 1 byte, got {:?}", samples);
-                return Err(anyhow!("Insufficient data"));
-            }
-            let sample: [u8; 1] = samples[..1].try_into()?;
-            Ok(sample)
-        })
-        .collect::<Vec<Result<[u8; 1], _>>>()
-        .await
-        .into_iter()
-        .collect::<Result<Vec<[u8; 1]>, _>>()?;
+        .take(1)
+        .collect::<Vec<Vec<u8>>>()
+        .await;
+    tracing::debug!("here");
+    let notifications = notifications.iter().collect::<Vec<&Vec<u8>>>();
 
     debug!("Notifications: {:?}", notifications);
 
-    let notifications: Vec<u8> = notifications
-        .iter()
-        .map(|s| u8::from_le_bytes(*s))
-        .collect();
+    // let notifications: Vec<u8> = notifications
+    //     .iter()
+    //     .map(|s| u8::from_le_bytes(*s))
+    //     .collect();
 
-    debug!("Notifications: {:?}", notifications);
-
-    Ok(notifications.len())
+    // debug!("Notifications: {:?}", notifications);
+    Ok(1)
+    // Ok(notifications.len())
 }
 
 fn filter() -> Result<ScanFilter> {
