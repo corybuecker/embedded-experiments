@@ -57,42 +57,39 @@ impl Events {
 
         let average_duration_between_updates = self.average_duration_between_updates().await;
 
-        match average_duration_between_updates {
-            Some(duration) => {
-                let breakpoints = BREAKPOINTS
-                    .iter()
-                    .map(|&breakpoint| {
-                        buffer
-                            .iter()
-                            .rev()
-                            .take(breakpoint.checked_div(duration).unwrap_or(0) as usize)
-                            .map(|&x| x as u16)
-                            .sum::<u16>()
-                    })
-                    .take(8)
-                    .collect::<Vec<u16, 8>>();
+        if let Some(duration) = average_duration_between_updates {
+            let breakpoints = BREAKPOINTS
+                .iter()
+                .map(|&breakpoint| {
+                    buffer
+                        .iter()
+                        .rev()
+                        .take(breakpoint.checked_div(duration).unwrap_or(0) as usize)
+                        .map(|&x| x as u16)
+                        .sum::<u16>()
+                })
+                .take(8)
+                .collect::<Vec<u16, 8>>();
 
-                let mut report_for_update = self.report.lock().await;
-                *report_for_update = breakpoints
-            }
-            None => {}
+            let mut report_for_update = self.report.lock().await;
+            *report_for_update = breakpoints
         }
 
         let mut update_timestamps_for_update = self.update_timestamps.lock().await;
         update_timestamps_for_update.write(timestamp);
     }
 
-    pub async fn as_bytes(&self) -> [u16; 8] {
+    pub async fn as_bytes(&self) -> [u8; 16] {
         let report = self.report.lock().await;
         let report_copy = report.clone();
         drop(report);
 
-        let report_copy: [u16; 8] = report_copy
-            .get(..)
-            .and_then(|s| s.try_into().ok())
-            .unwrap_or_default();
+        let report_copy = report_copy
+            .iter()
+            .flat_map(|b| b.to_be_bytes())
+            .collect::<Vec<u8, 16>>();
 
-        report_copy
+        report_copy.as_slice().try_into().unwrap()
     }
 
     pub async fn as_uuid(&self) -> Result<Uuid, TryFromSliceError> {
