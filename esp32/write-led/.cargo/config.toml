@@ -1,0 +1,19 @@
+[build]
+target = "riscv32imac-unknown-none-elf"
+
+[target.riscv32imac-unknown-none-elf]
+runner = "probe-rs run --protocol=jtag --chip=esp32c6 --preverify --always-print-stacktrace --catch-hardfault"
+rustflags = [
+  "-C", "link-arg=-Tlinkall.x",
+  "-C", "force-frame-pointers",
+  "-C", "link-arg=-Tdefmt.x",
+]
+
+[env]
+DEFMT_LOG="debug"
+
+[unstable]
+build-std = ["core"]
+
+[profile.release]
+debug = 2

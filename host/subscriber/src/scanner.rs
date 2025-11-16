@@ -9,7 +9,6 @@ use tokio::{
     time::{sleep, timeout},
 };
 use tokio_stream::StreamExt;
-use tracing::{debug, error};
 use uuid::Uuid;
 
 static SERVICE_UUID: &str = "00000000-0000-1000-8000-00805f9b34fb";
@@ -52,7 +51,7 @@ async fn connect_to_peripheral(adapter: Adapter) -> Result<Peripheral> {
                 .find(|s| s.uuid == service_uuid)
                 .ok_or(anyhow!("could not find the service"))?;
 
-            debug!("Discovered service: {:?}", service);
+            tracing::debug!("Discovered service: {:?}", service);
 
             let characteristics = service.characteristics;
             let characteristic = characteristics
@@ -93,7 +92,7 @@ async fn collect_samples(peripheral: Peripheral) -> Result<usize> {
     tracing::debug!("here");
     let notifications = notifications.iter().collect::<Vec<&Vec<u8>>>();
 
-    debug!("Notifications: {:?}", notifications);
+    tracing::debug!("Notifications: {:?}", notifications);
 
     // let notifications: Vec<u8> = notifications
     //     .iter()

@@ -3,14 +3,19 @@
 
 mod common;
 mod gatt;
+mod led;
 
 use crate::gatt::advertise_and_handle_connection;
+use crate::led::{create_channel, off, red_led};
 use core::future::pending;
+use defmt::Debug2Format;
 use embassy_executor::Spawner;
 use embassy_futures::select::select4;
 use embassy_time::Timer;
+use esp_hal::Async;
 use esp_hal::clock::CpuClock;
 use esp_hal::gpio::{Input, InputConfig, Level};
+use esp_hal::rmt::{Channel, Tx};
 use esp_hal::rtc_cntl::Rtc;
 use esp_hal::time::Duration;
 use esp_hal::timer::timg::TimerGroup;
@@ -42,6 +47,8 @@ async fn main(_spawner: Spawner) -> ! {
 
     let _rtc = Rtc::new(peripherals.LPWR);
 
+    let mut led_channel = create_channel(peripherals.RMT, peripherals.GPIO8).await;
+
     static RADIO: StaticCell<esp_radio::Controller<'static>> = StaticCell::new();
     let radio = RADIO.init(esp_radio::init().unwrap());
 
@@ -66,13 +73,13 @@ async fn main(_spawner: Spawner) -> ! {
 
     let events = Events::default();
     let input = Input::new(
-        peripherals.GPIO10,
+        peripherals.GPIO3,
         InputConfig::default().with_pull(esp_hal::gpio::Pull::None),
     );
 
     let _ = select4(
         runner.run(),
-        collect_events(&input, &events),
+        collect_events(&input, &events, &mut led_channel),
         advertise_and_handle_connection(&events, &mut peripheral),
         async {
             loop {
@@ -91,16 +98,24 @@ async fn main(_spawner: Spawner) -> ! {
     pending().await
 }
 
-async fn collect_events(input: &Input<'static>, events: &Events) {
+async fn collect_events(
+    input: &Input<'static>,
+    events: &Events,
+    led_channel: &mut Channel<'static, Async, Tx>,
+) {
     loop {
         match input.level() {
             Level::High => {
                 events
                     .record(event_storage::storage::RecordType::High)
                     .await;
+
+                let _result = red_led(led_channel).await;
+                // defmt::error!("{}", Debug2Format(&result));
             }
             Level::Low => {
                 events.record(event_storage::storage::RecordType::Low).await;
+                let _ = off(led_channel).await;
             }
         }
 
