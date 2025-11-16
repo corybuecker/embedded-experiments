@@ -1,0 +1,36 @@
+// Key Configuration Changes
+// 1. **`cargo.buildScripts.enable: true`** - Enables build script execution, important for ESP32 projects that use build scripts for linking
+// 2. **`cargo.features: "all"`** - Analyzes code with all features enabled, giving better completions across the workspace
+// 3. **`check.allTargets: false`** - Only checks the embedded target, avoids errors from trying to check host tests with the embedded target
+// 4. **`check.extraArgs`** - Explicitly passes the target to cargo check, ensuring consistency
+// 5. **`procMacro.enable: true`** - Critical for Embassy macros like `#[esp_rtos::main]`, `#[embassy_executor::task]`, etc.
+// 6. **`procMacro.attributes.enable: true`** - Enables attribute macro expansion for better analysis
+
+{
+  "inlay_hints": {
+    "enabled": true
+  },
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "target": "riscv32imac-unknown-none-elf",
+          "buildScripts": {
+            "enable": true
+          },
+          "features": "all"
+        },
+        "check": {
+          "allTargets": false,
+          "extraArgs": ["--target=riscv32imac-unknown-none-elf"]
+        },
+        "procMacro": {
+          "enable": true,
+          "attributes": {
+            "enable": true
+          }
+        }
+      }
+    }
+  }
+}
