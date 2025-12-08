@@ -15,7 +15,7 @@ jobs:
       run:
         working-directory: ./host
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           components: clippy
@@ -34,7 +34,7 @@ jobs:
       run:
         working-directory: ./pico-2w
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           target: thumbv8m.main-none-eabihf
@@ -51,7 +51,7 @@ jobs:
       run:
         working-directory: ./nRF52840
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c
         with:
           target: thumbv7em-none-eabihf
@@ -65,7 +65,7 @@ jobs:
   lint-c-zephyr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - run: clang-format --dry-run --Werror embedded-workspace/peripheral-notify/src/*.c
       - run: clang-format --dry-run --Werror embedded-workspace/peripheral-notify/src/*.h
       - run: clang-format --dry-run --Werror embedded-workspace/peripheral-periodic/src/*.c
